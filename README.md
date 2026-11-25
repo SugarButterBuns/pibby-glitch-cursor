@@ -15,7 +15,8 @@ Get the latest version from **[Releases](../../releases)**:
 | System | Download | How |
 |---|---|---|
 | Windows | `PibbyGlitchCursorInstaller.exe` | Double-click it. No admin rights are needed. If Windows warns the app is unrecognized, click *More info → Run anyway* (it isn't code-signed). |
-| Linux | `PibbyGlitchCursor-linux.zip` | Unzip it, then run `sh install.sh`. |
+| Linux (app) | `PibbyGlitchCursorInstaller-x86_64.AppImage` | Make it executable (`chmod +x`, or Properties → Allow executing), then run it. |
+| Linux (no app) | `PibbyGlitchCursor-linux.zip` | Unzip it, then run `sh install.sh`. |
 
 The installer app:
 - **Detects** your current cursors, with a per-pointer **Details** view.

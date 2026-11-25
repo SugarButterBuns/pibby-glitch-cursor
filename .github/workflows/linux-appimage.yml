@@ -1,0 +1,96 @@
+name: Linux AppImage
+
+# Builds the installer app as an AppImage on Linux, tests it, and attaches it
+# to the release. Runs automatically when a release is published, or by hand.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to attach the AppImage to
+        default: v1.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    # Older Ubuntu = older glibc, so the AppImage runs on more distros
+    runs-on: ubuntu-22.04
+    env:
+      APPIMAGE_EXTRACT_AND_RUN: "1"   # run appimagetool / the AppImage without FUSE
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python, Tk and a virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk python3-venv xvfb
+          python3 -m venv --system-site-packages .venv
+          .venv/bin/pip install --upgrade pip pillow pyinstaller
+
+      - name: Get appimagetool
+        run: |
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+
+      - name: Test install / backup / uninstall / restore on real Linux
+        run: |
+          .venv/bin/python build_cursors.py
+          PIBBY_TEST_ROOT="$RUNNER_TEMP/home" PIBBY_NO_APPLY=1 .venv/bin/python - <<'EOF'
+          import os
+          from pathlib import Path
+          import installer_gui as ig
+          home = Path(os.environ["PIBBY_TEST_ROOT"])
+          mine = home / ".icons/MyCustom/cursors"; mine.mkdir(parents=True)
+          (mine / "default").write_bytes(b"custom")
+          (home / ".icons/default").mkdir(parents=True)
+          (home / ".icons/default/index.theme").write_text("[Icon Theme]\nInherits=MyCustom\n")
+          l = ig.LinuxCursors()
+          assert l.detect()["kind"] == "custom" and l.has_custom()
+          l.backup(); l.install()
+          cur = l.install_dir / "cursors"
+          links = [p for p in cur.iterdir() if p.is_symlink()]
+          assert len(list(cur.iterdir())) == 103 and len(links) == 88, (len(list(cur.iterdir())), len(links))
+          assert all(p.resolve().is_file() for p in links), "dangling symlink"
+          assert (cur / "text").resolve().name == "text" and (cur / "left_ptr").resolve().name == "default"
+          d = l.detect(); assert d["kind"] == "pibby" and "15/15" in d["summary"], d
+          import shutil; shutil.rmtree(mine.parent)
+          l.uninstall(); assert not l.install_dir.exists()
+          l.restore(); assert (mine / "default").read_bytes() == b"custom"
+          assert l.detect()["name"] == "MyCustom"
+          print("Linux install/backup/uninstall/restore: OK (103 names, 88 real symlinks)")
+          EOF
+          # the shell installer too
+          mkdir -p "$RUNNER_TEMP/sh" && cd "$RUNNER_TEMP/sh" && unzip -q "$GITHUB_WORKSPACE/dist/PibbyGlitchCursor-linux.zip"
+          HOME="$RUNNER_TEMP/shhome" sh ./install.sh
+          test -L "$RUNNER_TEMP/shhome/.icons/PibbyGlitchCursor/cursors/left_ptr"
+          echo "install.sh: OK"
+
+      - name: Build AppImage
+        run: .venv/bin/python build_installer.py
+
+      - name: Check the AppImage launches
+        run: |
+          APP=dist/PibbyGlitchCursorInstaller-x86_64.AppImage
+          chmod +x "$APP"
+          set +e
+          PIBBY_TEST_ROOT="$RUNNER_TEMP/launch" PIBBY_NO_APPLY=1 xvfb-run -a timeout 15 "$APP"
+          code=$?
+          set -e
+          # 124 = still running when the timeout hit, i.e. the window came up fine
+          if [ "$code" -ne 124 ]; then echo "AppImage exited early with code $code"; exit 1; fi
+          echo "AppImage launched OK"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PibbyGlitchCursorInstaller-x86_64.AppImage
+          path: dist/PibbyGlitchCursorInstaller-x86_64.AppImage
+
+      - name: Attach to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: gh release upload "$TAG" dist/PibbyGlitchCursorInstaller-x86_64.AppImage --clobber
