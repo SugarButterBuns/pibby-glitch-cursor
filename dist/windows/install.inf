@@ -1,0 +1,54 @@
+[Version]
+signature="$CHICAGO$"
+
+[DefaultInstall]
+CopyFiles = Scheme.Cur
+AddReg    = Scheme.Reg
+
+[DestinationDirs]
+Scheme.Cur = 10,"%CUR_DIR%"
+
+[Scheme.Reg]
+HKCU,"Control Panel\Cursors\Schemes","%SCHEME_NAME%",0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-Help.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-AppStarting.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-Wait.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-Crosshair.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-IBeam.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-NWPen.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-No.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-SizeNS.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-SizeWE.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-SizeNWSE.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-SizeNESW.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-SizeAll.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-UpArrow.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-Hand.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-Pin.ani,%10%\%CUR_DIR%\PibbyGlitchCursor-Person.ani"
+HKCU,"Control Panel\Cursors",,0x00000000,"%SCHEME_NAME%"
+HKCU,"Control Panel\Cursors",Arrow,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor.ani"
+HKCU,"Control Panel\Cursors",Help,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-Help.ani"
+HKCU,"Control Panel\Cursors",AppStarting,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-AppStarting.ani"
+HKCU,"Control Panel\Cursors",Wait,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-Wait.ani"
+HKCU,"Control Panel\Cursors",Crosshair,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-Crosshair.ani"
+HKCU,"Control Panel\Cursors",IBeam,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-IBeam.ani"
+HKCU,"Control Panel\Cursors",NWPen,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-NWPen.ani"
+HKCU,"Control Panel\Cursors",No,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-No.ani"
+HKCU,"Control Panel\Cursors",SizeNS,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-SizeNS.ani"
+HKCU,"Control Panel\Cursors",SizeWE,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-SizeWE.ani"
+HKCU,"Control Panel\Cursors",SizeNWSE,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-SizeNWSE.ani"
+HKCU,"Control Panel\Cursors",SizeNESW,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-SizeNESW.ani"
+HKCU,"Control Panel\Cursors",SizeAll,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-SizeAll.ani"
+HKCU,"Control Panel\Cursors",UpArrow,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-UpArrow.ani"
+HKCU,"Control Panel\Cursors",Hand,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-Hand.ani"
+HKCU,"Control Panel\Cursors",Pin,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-Pin.ani"
+HKCU,"Control Panel\Cursors",Person,0x00020000,"%10%\%CUR_DIR%\PibbyGlitchCursor-Person.ani"
+HKCU,"Control Panel\Cursors",Scheme Source,0x00010001,1
+
+[Scheme.Cur]
+"PibbyGlitchCursor.ani"
+"PibbyGlitchCursor-Help.ani"
+"PibbyGlitchCursor-AppStarting.ani"
+"PibbyGlitchCursor-Wait.ani"
+"PibbyGlitchCursor-Crosshair.ani"
+"PibbyGlitchCursor-IBeam.ani"
+"PibbyGlitchCursor-NWPen.ani"
+"PibbyGlitchCursor-No.ani"
+"PibbyGlitchCursor-SizeNS.ani"
+"PibbyGlitchCursor-SizeWE.ani"
+"PibbyGlitchCursor-SizeNWSE.ani"
+"PibbyGlitchCursor-SizeNESW.ani"
+"PibbyGlitchCursor-SizeAll.ani"
+"PibbyGlitchCursor-UpArrow.ani"
+"PibbyGlitchCursor-Hand.ani"
+"PibbyGlitchCursor-Pin.ani"
+"PibbyGlitchCursor-Person.ani"
+
+[Strings]
+CUR_DIR     = "Cursors\PibbyGlitchCursor"
+SCHEME_NAME = "PibbyGlitchCursor"

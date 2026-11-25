@@ -1,0 +1,13 @@
+# build scratch
+build/
+__pycache__/
+*.spec
+
+# app binaries ship as GitHub Release downloads, not in the repo
+dist/*.exe
+dist/*.AppImage
+appimagetool*.AppImage
+
+# personal machine-specific backups (never publish)
+dist/windows/cursor-settings-backup.reg
+dist/windows/restore-previous-cursors.ps1
