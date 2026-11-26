@@ -23,6 +23,7 @@ The installer app:
 - **Install / Uninstall:** one click each.
 - **Backup:** saves your current custom cursors first, including copies of the cursor files.
 - **Restore backup:** brings them back.
+- **Glitch effect on every window:** an optional tick box that makes the app's own windows glitch like the cursor, with corruption bars, flickering colours and scrambled text. It's off by default, and the app remembers your choice.
 
 To install without the app, see [dist/README.md](dist/README.md).
 
@@ -52,9 +53,9 @@ The installer app is fully offline. It has no accounts, no tracking and no phone
 - **Collect, send or upload anything.** Nothing leaves your computer.
 - **Need admin rights.** It never asks for them, so it can't change system-wide settings.
 - **Run in the background, start with your computer, or install services.** It runs only while its window is open. On Windows it unpacks itself to a temporary folder while running and deletes that folder when you close it.
-- **Read anything besides cursor settings.** It doesn't look at your files, browsing data, other apps or personal info.
+- **Read anything besides cursor settings and its own settings file.** It doesn't look at your files, browsing data, other apps or personal info.
 
-**What it does, and only when you click a button:**
+**What it does, and only when you click a button or tick box:**
 
 | | Windows | Linux |
 |---|---|---|
@@ -63,6 +64,7 @@ The installer app is fully offline. It has no accounts, no tracking and no phone
 | **Backup** (only if ticked) | Saves your cursor settings and copies the cursor files they use to `%LOCALAPPDATA%\PibbyGlitchCursor\backup` | Saves your theme settings and copies a user-installed theme to `~/.local/share/PibbyGlitchCursor/backup` |
 | **Uninstall** | Deletes its cursor folder and switches back to Windows Default | Deletes its theme folder and resets the cursor setting |
 | **Restore** | Puts back your backed-up settings and recreates any backed-up cursor files that were deleted | The same, for your theme |
+| **Glitch effect tick box** | Saves whether it's ticked to `%LOCALAPPDATA%\PibbyGlitchCursor\settings.json` | Saves it to `~/.local/share/PibbyGlitchCursor/settings.json` |
 
 The backup stays on your computer. It holds your old cursor settings and the file paths they used (which include your username, as all Windows/Linux paths do). Delete the backup folder at any time to remove it.
 
