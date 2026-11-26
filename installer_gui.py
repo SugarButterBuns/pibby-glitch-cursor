@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import threading
 import time
 from pathlib import Path
 
@@ -758,7 +759,7 @@ def run_gui():
     details_btn.pack(anchor="w", pady=(2, 0))
     backup_lbl = tk.Label(info, bg=BG, fg=DIM, justify="left", wraplength=290)
     backup_lbl.pack(anchor="w", pady=(8, 0))
-    detected = {"d": None, "sig": None}
+    detected = {"d": None, "sig": None, "gen": 0}
 
     def show_details(_event=None):
         d = detected["d"] or sysc.detect()
@@ -855,10 +856,13 @@ def run_gui():
                  ("by the Pibby: Apocalypse Team · CC BY-NC 4.0 ·", None, False),
                  ("Credits…", show_credits, True)], (0, 8))
 
-    def refresh():
-        installed = sysc.is_installed()
-        b = sysc.backup_info()
-        d = sysc.detect()
+    def snapshot():
+        """What the window shows about the system. Slow-ish on Linux (runs gsettings)."""
+        return sysc.is_installed(), sysc.backup_info(), sysc.detect()
+
+    def refresh(snap=None):
+        installed, b, d = snap or snapshot()
+        detected["gen"] += 1  # results of checks started before this are now out of date
         detected["d"] = d
         detected["sig"] = (d["name"], d["summary"], installed, b["created"] if b else None)
         status.configure(text=d["name"])
@@ -873,15 +877,33 @@ def run_gui():
             chk.state(["!disabled"])
 
     def watch():
-        """Re-detect every 2 s so changes made in system settings show up live."""
-        try:
-            installed, b, d = sysc.is_installed(), sysc.backup_info(), sysc.detect()
-            if (d["name"], d["summary"], installed, b["created"] if b else None) != detected["sig"]:
-                refresh()
-                do_backup.set(sysc.has_custom() and not installed)
-        except Exception:
-            pass
-        root.after(2000, watch)
+        """Re-detect every 2 s so changes made in system settings show up live. The check runs
+        on a background thread so the animations never pause for it; only the result is
+        applied here, on the window's own thread (tkinter isn't thread-safe)."""
+        gen, box = detected["gen"], {}
+
+        def work():
+            try:
+                snap = snapshot()
+                box["result"] = (snap, sysc.has_custom())
+            except Exception:
+                box["result"] = None
+
+        def collect():
+            if "result" not in box:
+                root.after(50, collect)
+                return
+            # skip results that a button action (which refreshes itself) has overtaken
+            if box["result"] and gen == detected["gen"]:
+                snap, custom = box["result"]
+                installed, b, d = snap
+                if (d["name"], d["summary"], installed, b["created"] if b else None) != detected["sig"]:
+                    refresh(snap)
+                    do_backup.set(custom and not installed)
+            root.after(2000, watch)
+
+        threading.Thread(target=work, daemon=True).start()
+        root.after(50, collect)
 
     def guarded(fn):
         def wrapper():
