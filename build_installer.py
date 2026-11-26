@@ -13,6 +13,7 @@ Linux also needs: python3-tk, and appimagetool (in PATH, or appimagetool-x86_64.
 next to this script) from https://github.com/AppImage/appimagetool/releases
 """
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -25,6 +26,10 @@ ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build" / "installer"
 NAME = "PibbyGlitchCursorInstaller"
 SEP = ";" if os.name == "nt" else ":"
+# the app's version, read from installer_gui.py (the one place it's set)
+VERSION = re.search(r'^VERSION = "(\d+)\.(\d+)\.(\d+)"', (ROOT / "installer_gui.py").read_text(encoding="utf-8"),
+                    re.M).group(1, 2, 3)
+VERSION_TEXT = ".".join(VERSION)
 
 # Standard-library parts the app never uses but PyInstaller pulls in through other modules'
 # optional imports (pathlib -> urllib.request -> ssl, ...). Leaving them out saves ~3 MB and
@@ -67,12 +72,28 @@ def main():
         args += ["--add-data", f"{src}{SEP}{dest}"]
     for mod in EXCLUDES:
         args += ["--exclude-module", mod]
+    if os.name == "nt":  # version shown in the .exe's Properties -> Details
+        nums = tuple(int(n) for n in VERSION) + (0,)
+        version_file = BUILD / "version_info.txt"
+        version_file.write_text(f"""VSVersionInfo(
+  ffi=FixedFileInfo(filevers={nums}, prodvers={nums}, mask=0x3f, flags=0x0, OS=0x40004,
+                    fileType=0x1, subtype=0x0, date=(0, 0)),
+  kids=[StringFileInfo([StringTable('040904B0', [
+          StringStruct('FileDescription', 'Pibby Glitch Cursor Installer'),
+          StringStruct('FileVersion', '{VERSION_TEXT}'),
+          StringStruct('InternalName', '{NAME}'),
+          StringStruct('OriginalFilename', '{NAME}.exe'),
+          StringStruct('ProductName', 'Pibby Glitch Cursor'),
+          StringStruct('ProductVersion', '{VERSION_TEXT}')])]),
+        VarFileInfo([VarStruct('Translation', [1033, 1200])])])
+""", encoding="utf-8")
+        args += ["--version-file", version_file]
     run(*args, ROOT / "installer_gui.py")
 
     if os.name == "nt":
         out = ROOT / "dist" / f"{NAME}.exe"
         shutil.copyfile(BUILD / "out" / f"{NAME}.exe", out)
-        print(f"\nBuilt {out}")
+        print(f"\nBuilt {out} (v{VERSION_TEXT})")
         return
 
     # ---- Linux: wrap the single binary in an AppImage
@@ -82,7 +103,8 @@ def main():
     shutil.copyfile(icon_png, appdir / f"{NAME}.png")
     (appdir / f"{NAME}.desktop").write_text(
         "[Desktop Entry]\nType=Application\nName=Pibby Glitch Cursor Installer\n"
-        f"Exec={NAME}\nIcon={NAME}\nCategories=Settings;DesktopSettings;\nTerminal=false\n")
+        f"Exec={NAME}\nIcon={NAME}\nCategories=Settings;DesktopSettings;\nTerminal=false\n"
+        f"X-AppImage-Version={VERSION_TEXT}\n")
     apprun = appdir / "AppRun"
     apprun.write_text(f'#!/bin/sh\nHERE="$(dirname "$(readlink -f "$0")")"\nexec "$HERE/usr/bin/{NAME}" "$@"\n')
     apprun.chmod(apprun.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
@@ -93,8 +115,8 @@ def main():
                  "https://github.com/AppImage/appimagetool/releases, chmod +x it, put it next\n"
                  "to this script and run again.")
     out = ROOT / "dist" / f"{NAME}-x86_64.AppImage"
-    run(tool, appdir, out, env={**os.environ, "ARCH": "x86_64"})
-    print(f"\nBuilt {out}")
+    run(tool, appdir, out, env={**os.environ, "ARCH": "x86_64", "VERSION": VERSION_TEXT})
+    print(f"\nBuilt {out} (v{VERSION_TEXT})")
 
 
 if __name__ == "__main__":
