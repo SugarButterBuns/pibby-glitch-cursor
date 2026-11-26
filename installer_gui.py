@@ -580,6 +580,145 @@ def run_gui():
     style.configure("TCheckbutton", background=BG, foreground=FG)
     style.map("TCheckbutton", background=[("active", BG)])
 
+    # ---- optional glitch effect on every app window (off by default; the choice is saved)
+    import random
+    GLITCH_BARS = ("#c878c8", "#ff00ff", "#00ffff", "#2020ff", "#000000", "#ffffff", "#0f1314")
+    GLITCH_TEXT = ("#ff00ff", "#00ffff", "#4040ff")
+    GLITCH_CHARS = "▓▒░█▚▞#@%&$?!_"
+    settings_file = sysc.backup_dir.parent / "settings.json"
+
+    def load_settings():
+        try:
+            return json.loads(settings_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+
+    def save_settings(**changes):
+        s = {**load_settings(), **changes}
+        try:
+            settings_file.parent.mkdir(parents=True, exist_ok=True)
+            settings_file.write_text(json.dumps(s, indent=1), encoding="utf-8")
+        except OSError:
+            pass  # can't save: the box still works for this session
+
+    glitch_on = tk.BooleanVar(value=bool(load_settings().get("glitch_windows")))
+    gstate = {}  # window -> {"bars", "job", "title", "fg", "text"}
+
+    def glitch_widgets(w):
+        """Text widgets in this window (not in its child windows, which glitch on their own)."""
+        for c in w.winfo_children():
+            if isinstance(c, tk.Toplevel):
+                continue
+            if isinstance(c, (tk.Label, ttk.Button, ttk.Checkbutton)):
+                yield c
+            yield from glitch_widgets(c)
+
+    def scramble(text):
+        t = list(text)
+        spots = [i for i, ch in enumerate(t) if not ch.isspace()]
+        for i in random.sample(spots, min(len(spots), random.randint(1, 3))):
+            t[i] = random.choice(GLITCH_CHARS)
+        return "".join(t)
+
+    def glitch_undo_text(st):
+        """Put back the colours and text the last step changed. Text the app updated in the
+        meantime (e.g. a new detection result) is left as the app set it."""
+        for w, fg in st["fg"].items():
+            if w.winfo_exists():
+                w.configure(fg=fg)
+        for w, (orig, scrambled) in st["text"].items():
+            if w.winfo_exists() and str(w.cget("text")) == scrambled:
+                w.configure(text=orig)
+        st["fg"], st["text"] = {}, {}
+
+    def glitch_clear(win):
+        st = gstate.get(win)
+        if not st:
+            return
+        try:
+            for bar in st["bars"]:
+                bar.place_forget()
+            glitch_undo_text(st)
+            if st["title"] is not None:
+                win.title(st["title"])
+                win.pack_propagate(True)
+        except tk.TclError:
+            pass
+        st["title"] = None
+
+    def glitch_schedule(win, delay=None):
+        st = gstate.get(win)
+        if st and not st["job"] and glitch_on.get():
+            st["job"] = root.after(delay if delay is not None else random.randint(350, 2200),
+                                   lambda: glitch_burst(win, random.randint(2, 6)))
+
+    def glitch_burst(win, steps):
+        """One short burst: a few 30-70 ms steps of corrupted bars, text and title."""
+        st = gstate.get(win)
+        if not st:
+            return
+        st["job"] = None
+        if not glitch_on.get() or steps <= 0:
+            glitch_clear(win)
+            glitch_schedule(win)
+            return
+        try:
+            if st["title"] is None:
+                st["title"] = win.title()
+                win.pack_propagate(False)  # scrambled text mustn't make the window jump in size
+            glitch_undo_text(st)
+            w, h = max(win.winfo_width(), 2), max(win.winfo_height(), 2)
+            for bar in st["bars"]:
+                if random.random() < 0.4:
+                    bar.place_forget()
+                    continue
+                if random.random() < 0.5:  # thin tear across the whole window
+                    bw, bh, x = w, random.randint(1, 4), 0
+                else:  # chunky displaced block
+                    bw, bh = random.randint(w // 10 + 1, w // 2 + 1), random.randint(4, h // 6 + 4)
+                    x = random.randint(-bw // 2, w - bw // 2)
+                bar.configure(bg=random.choice(GLITCH_BARS))
+                bar.place(x=x, y=random.randint(0, max(0, h - bh)), width=bw, height=bh)
+                bar.lift()
+            for wid in glitch_widgets(win):
+                if isinstance(wid, tk.Label) and random.random() < 0.25:
+                    st["fg"][wid] = wid.cget("fg")
+                    wid.configure(fg=random.choice(GLITCH_TEXT))
+                text = str(wid.cget("text"))
+                if text.strip() and random.random() < 0.3:
+                    scrambled = scramble(text)
+                    st["text"][wid] = (text, scrambled)
+                    wid.configure(text=scrambled)
+            win.title(scramble(st["title"]) if st["title"].strip() else st["title"])
+        except tk.TclError:  # window is closing
+            return
+        st["job"] = root.after(random.randint(30, 70), lambda: glitch_burst(win, steps - 1))
+
+    def glitchable(win):
+        """Register a window so the glitch effect (when switched on) runs on it too."""
+        gstate[win] = {"bars": [tk.Frame(win, bd=0, highlightthickness=0) for _ in range(7)],
+                       "job": None, "title": None, "fg": {}, "text": {}}
+
+        def forget(e):
+            if e.widget is win and win in gstate:
+                st = gstate.pop(win)
+                if st["job"]:
+                    root.after_cancel(st["job"])
+        win.bind("<Destroy>", forget, add="+")
+        glitch_schedule(win, 250)
+        return win
+
+    def glitch_toggle():
+        save_settings(glitch_windows=glitch_on.get())
+        for win, st in list(gstate.items()):
+            if st["job"]:
+                root.after_cancel(st["job"])
+                st["job"] = None
+            glitch_clear(win)
+            glitch_schedule(win, 150)
+
+    glitchable(root)
+
     # animated preview of the actual cursor frames
     frames = []
     frame_dir = resource("payload", "preview")
@@ -626,6 +765,7 @@ def run_gui():
         win = tk.Toplevel(root)
         win.title(f"Detected cursors: {d['name']}")
         win.configure(bg=BG)
+        glitchable(win)
         tk.Label(win, text=d["name"], bg=BG, fg=FG, font=("Segoe UI" if IS_WINDOWS else "Sans", 12, "bold")
                  ).pack(anchor="w", padx=14, pady=(12, 0))
         tk.Label(win, text=d["summary"] + (f"\nFolder: {d['source']}" if d["source"] else ""),
@@ -648,6 +788,8 @@ def run_gui():
     do_backup = tk.BooleanVar(value=sysc.has_custom())
     chk = ttk.Checkbutton(root, text="Back up my current cursors before installing", variable=do_backup)
     chk.pack(anchor="w", padx=22, pady=(6, 0))
+    ttk.Checkbutton(root, text="Glitch effect on every window", variable=glitch_on,
+                    command=glitch_toggle).pack(anchor="w", padx=22, pady=(4, 0))
     btns = tk.Frame(root, bg=BG)
     btns.pack(padx=22, pady=(12, 10), fill="x")
 
@@ -676,6 +818,7 @@ def run_gui():
         win = tk.Toplevel(root)
         win.title("Credits")
         win.configure(bg=BG)
+        glitchable(win)
         s, m = credits.SCRIPT, credits.MOD
         tk.Label(win, text="Credits", bg=BG, fg=FG, font=("Segoe UI" if IS_WINDOWS else "Sans", 13, "bold")
                  ).pack(anchor="w", padx=14, pady=(12, 2))
