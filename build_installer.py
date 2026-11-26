@@ -27,8 +27,10 @@ BUILD = ROOT / "build" / "installer"
 NAME = "PibbyGlitchCursorInstaller"
 SEP = ";" if os.name == "nt" else ":"
 # the app's version, read from installer_gui.py (the one place it's set)
-VERSION = re.search(r'^VERSION = "(\d+)\.(\d+)\.(\d+)"', (ROOT / "installer_gui.py").read_text(encoding="utf-8"),
-                    re.M).group(1, 2, 3)
+_m = re.search(r'^VERSION = "(\d+)\.(\d+)\.(\d+)"', (ROOT / "installer_gui.py").read_text(encoding="utf-8"), re.M)
+if not _m:
+    sys.exit('installer_gui.py needs a line like  VERSION = "1.2.3"  (three numbers)')
+VERSION = _m.group(1, 2, 3)
 VERSION_TEXT = ".".join(VERSION)
 
 # Standard-library parts the app never uses but PyInstaller pulls in through other modules'

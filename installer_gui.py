@@ -47,6 +47,17 @@ def payload(*parts):
     return p if p.exists() else resource("dist", *parts)
 
 
+def read_backup_info(f):
+    """The saved backup's details, or None if there is no backup or its file is damaged
+    (a damaged backup.json used to stop the app from opening)."""
+    try:
+        info = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return info if isinstance(info, dict) and isinstance(info.get("name"), str) \
+        and isinstance(info.get("created"), str) else None
+
+
 # =============================================================== Windows ===
 class WindowsCursors:
     ROLES = ["Arrow", "Help", "AppStarting", "Wait", "Crosshair", "IBeam", "NWPen", "No",
@@ -252,8 +263,7 @@ class WindowsCursors:
         return self.detect()["kind"] in ("custom", "mixed", "accessibility")
 
     def backup_info(self):
-        f = self.backup_dir / "backup.json"
-        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+        return read_backup_info(self.backup_dir / "backup.json")
 
     # ---- actions
     def backup(self):
@@ -476,8 +486,7 @@ class LinuxCursors:
         return d["kind"] == "custom" or (d["kind"] == "system" and self._theme_from(self._settings()) not in self.STOCK)
 
     def backup_info(self):
-        f = self.backup_dir / "backup.json"
-        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+        return read_backup_info(self.backup_dir / "backup.json")
 
     def _apply_theme(self, name):
         for schema, key in self.GSETTINGS:
@@ -665,7 +674,10 @@ def run_gui():
             glitch_schedule(win)
             return
         try:
-            if st["title"] is None:
+            if st["title"] is None:  # starting a new burst
+                if not win.winfo_viewable():  # not laid out on screen yet, or minimised
+                    glitch_schedule(win)
+                    return
                 st["title"] = win.title()
                 win.pack_propagate(False)  # scrambled text mustn't make the window jump in size
             glitch_undo_text(st)
@@ -898,14 +910,18 @@ def run_gui():
             if "result" not in box:
                 root.after(50, collect)
                 return
-            # skip results that a button action (which refreshes itself) has overtaken
-            if box["result"] and gen == detected["gen"]:
-                snap, custom = box["result"]
-                installed, b, d = snap
-                if (d["name"], d["summary"], installed, b["created"] if b else None) != detected["sig"]:
-                    refresh(snap)
-                    do_backup.set(custom and not installed)
-            root.after(2000, watch)
+            try:
+                # skip results that a button action (which refreshes itself) has overtaken
+                if box["result"] and gen == detected["gen"]:
+                    snap, custom = box["result"]
+                    installed, b, d = snap
+                    if (d["name"], d["summary"], installed, b["created"] if b else None) != detected["sig"]:
+                        refresh(snap)
+                        do_backup.set(custom and not installed)
+            except Exception:
+                pass  # one bad read (e.g. a damaged backup.json) mustn't stop the checks
+            finally:
+                root.after(2000, watch)
 
         threading.Thread(target=work, daemon=True).start()
         root.after(50, collect)
