@@ -30,7 +30,7 @@ import time
 from pathlib import Path
 
 APP_NAME = "Pibby Glitch Cursor"
-VERSION = "1.1.1"  # the one place to change it: the builds and release check read it from here
+VERSION = "1.1.2"  # the one place to change it: the builds and release check read it from here
 import credits  # who made what: shown in the footer and the Credits window
 THEME = "PibbyGlitchCursor"
 IS_WINDOWS = sys.platform == "win32"
