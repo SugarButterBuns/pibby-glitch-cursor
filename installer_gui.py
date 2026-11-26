@@ -584,8 +584,12 @@ def run_gui():
               foreground=[("disabled", "#55626a")])
     style.configure("Accent.TButton", background=ACCENT, foreground="#101416")
     style.map("Accent.TButton", background=[("active", "#ffffff"), ("disabled", "#1c2224")])
+    # Row height must follow the real font height: on Linux (HiDPI / larger default fonts) a
+    # fixed 22px is shorter than one line of text, so rows overlap and letters get cut off.
+    from tkinter import font as tkfont
+    row_h = max(22, tkfont.nametofont("TkDefaultFont").metrics("linespace") + 8)
     style.configure("Treeview", background="#1c2224", fieldbackground="#1c2224", foreground=FG,
-                    bordercolor="#3a4549", rowheight=22)
+                    bordercolor="#3a4549", rowheight=row_h)
     style.configure("Treeview.Heading", background="#2a3236", foreground=FG, bordercolor="#3a4549")
     style.map("Treeview.Heading", background=[("active", "#38434a")])
     style.configure("TCheckbutton", background=BG, foreground=FG)
