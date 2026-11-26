@@ -26,6 +26,15 @@ BUILD = ROOT / "build" / "installer"
 NAME = "PibbyGlitchCursorInstaller"
 SEP = ";" if os.name == "nt" else ":"
 
+# Standard-library parts the app never uses but PyInstaller pulls in through other modules'
+# optional imports (pathlib -> urllib.request -> ssl, ...). Leaving them out saves ~3 MB and
+# means the app ships with no networking or SSL code at all. hashlib still works without
+# _hashlib, using Python's built-in hashes.
+EXCLUDES = ["ssl", "_ssl", "_hashlib", "socket", "_socket", "http", "urllib.request", "ftplib",
+            "email", "decimal", "_decimal", "lzma", "_lzma", "bz2", "_bz2", "compression.zstd", "_zstd"]
+if os.name == "nt":
+    EXCLUDES += ["select"]  # Linux keeps it: subprocess needs it there
+
 
 def run(*cmd, **kw):
     print(">", " ".join(str(c) for c in cmd))
@@ -56,6 +65,8 @@ def main():
             "--specpath", BUILD, "--icon", icon_ico if os.name == "nt" else icon_png]
     for src, dest in data:
         args += ["--add-data", f"{src}{SEP}{dest}"]
+    for mod in EXCLUDES:
+        args += ["--exclude-module", mod]
     run(*args, ROOT / "installer_gui.py")
 
     if os.name == "nt":
