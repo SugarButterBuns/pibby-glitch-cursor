@@ -25,6 +25,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check the release tag matches the app's version
+        if: github.event_name == 'release' || inputs.tag != ''
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          VERSION=$(sed -n 's/^VERSION = "\([^"]*\)".*/\1/p' installer_gui.py)
+          if [ -z "$VERSION" ] || [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::Release tag '$TAG' doesn't match the app's version 'v$VERSION' (VERSION in installer_gui.py)"
+            exit 1
+          fi
+          echo "Tag $TAG matches the app's version"
+
       - name: Install Python, Tk and a virtual display
         run: |
           sudo apt-get update
@@ -100,6 +112,9 @@ jobs:
           def mainloop(self):
               glitch = next(c for c in find(self, ttk.Checkbutton) if "Glitch" in c.cget("text"))
               def start():
+                  if not self.winfo_viewable():  # clicks only arrive once the window is on screen
+                      self.after(100, start)
+                      return
                   glitch.invoke()
                   for lbl in list(find(self, tk.Label)):
                       if lbl.cget("text") in ("Credits…", "Details…"):

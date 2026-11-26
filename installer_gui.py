@@ -30,6 +30,7 @@ import time
 from pathlib import Path
 
 APP_NAME = "Pibby Glitch Cursor"
+VERSION = "1.1.1"  # the one place to change it: the builds and release check read it from here
 import credits  # who made what: shown in the footer and the Credits window
 THEME = "PibbyGlitchCursor"
 IS_WINDOWS = sys.platform == "win32"
@@ -562,7 +563,7 @@ def run_gui():
 
     sysc = backend()
     root = tk.Tk()
-    root.title(f"{APP_NAME} Installer")
+    root.title(f"{APP_NAME} Installer v{VERSION}")
     root.resizable(False, False)
     BG, FG, DIM, ACCENT = "#14191b", "#e8ecef", "#8b979e", "#b4bfcb"
     root.configure(bg=BG)
@@ -744,8 +745,12 @@ def run_gui():
         tick()
     info = tk.Frame(top, bg=BG)
     info.pack(side="left", padx=(18, 0), fill="both")
-    tk.Label(info, text=APP_NAME, bg=BG, fg=FG, font=("Segoe UI" if IS_WINDOWS else "Sans", 16, "bold")
-             ).pack(anchor="w")
+    name_row = tk.Frame(info, bg=BG)
+    name_row.pack(anchor="w")
+    tk.Label(name_row, text=APP_NAME, bg=BG, fg=FG, font=("Segoe UI" if IS_WINDOWS else "Sans", 16, "bold")
+             ).pack(side="left")
+    tk.Label(name_row, text=f"v{VERSION}", bg=BG, fg=DIM, font=("Segoe UI" if IS_WINDOWS else "Sans", 9)
+             ).pack(side="left", anchor="s", padx=(6, 0), pady=(0, 4))
     tk.Label(info, text="Fully glitched animated pointer set", bg=BG, fg=DIM).pack(anchor="w")
     tk.Label(info, text="DETECTED", bg=BG, fg=DIM, font=("Segoe UI" if IS_WINDOWS else "Sans", 8, "bold")
              ).pack(anchor="w", pady=(12, 0))
