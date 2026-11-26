@@ -55,7 +55,7 @@ The installer app is fully offline. It has no accounts, no tracking and no phone
 - **Run in the background, start with your computer, or install services.** It runs only while its window is open. On Windows it unpacks itself to a temporary folder while running and deletes that folder when you close it.
 - **Read anything besides cursor settings and its own settings file.** It doesn't look at your files, browsing data, other apps or personal info.
 
-**What it does, and only when you click a button or tick box:**
+**What it does.** It only changes anything when you click a button or tick box. While its window is open, it re-reads your cursor settings every 2 seconds, so changes you make in system settings show up live.
 
 | | Windows | Linux |
 |---|---|---|
